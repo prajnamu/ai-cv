@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AmanCV - Privacy-First AI Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap');
+        body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
+        .cv-preview { width: 210mm; min-height: 297mm; background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin: 0 auto; padding: 18mm; color: #1e293b; transition: all 0.3s ease; }
+        .style-modern #cv-content { background: linear-gradient(to bottom, #f8fafc 180px, white 180px); }
+        .style-modern h1 { font-family: 'Playfair Display', serif; color: #1e1b4b; }
+        .style-modern .section-title { border-left: 4px solid #4338ca; padding-left: 12px; border-bottom: none; }
+        .ai-shimmer { background: linear-gradient(90deg, #eff6ff 0%, #dbeafe 50%, #eff6ff 100%); background-size: 200% 100%; animation: shimmer 2s infinite; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        @media print { .no-print { display: none !important; } .cv-preview { box-shadow: none; margin: 0; padding: 10mm; width: 100%; } body { background: white; } }
+        .render-text b, .render-text strong { font-weight: 700; color: #0f172a; }
+        .render-text i, .render-text em { font-style: italic; color: #334155; }
+        .render-text p { margin-bottom: 0.5rem; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800">
+
+    <nav class="bg-slate-900 text-white p-4 shadow-xl sticky top-0 z-50 no-print">
+        <div class="container mx-auto flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">🛡️</span>
+                <h1 class="text-xl font-bold tracking-tight">AmanCV <span class="text-indigo-400 font-light">| AI Editor</span></h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
+                    <button onclick="changeStyle('classic')" id="btn-classic" class="text-[10px] px-3 py-1.5 rounded-md bg-indigo-600 font-bold uppercase tracking-wider transition-all">Classic ATS</button>
+                    <button onclick="changeStyle('modern')" id="btn-modern" class="text-[10px] px-3 py-1.5 rounded-md hover:bg-slate-700 font-bold uppercase tracking-wider transition-all">Modern Pro</button>
+                </div>
+                <div class="h-6 w-px bg-slate-700"></div>
+                <button onclick="loadSample('id')" class="text-xs font-medium bg-slate-800 px-3 py-1.5 rounded-full hover:bg-slate-700 hover:text-indigo-400 transition">🇮🇩 Acak Contoh</button>
+                <button onclick="loadSample('en')" class="text-xs font-medium bg-slate-800 px-3 py-1.5 rounded-full hover:bg-slate-700 hover:text-indigo-400 transition">🇺🇸 Random Sample</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto py-8 px-4 flex flex-col lg:flex-row gap-8">
+        <!-- Panel Input (Kiri) -->
+        <div class="w-full lg:w-5/12 space-y-6 no-print">
+            <div class="bg-white border-2 border-indigo-500 rounded-2xl shadow-xl overflow-hidden">
+                <div class="bg-indigo-600 p-4 flex items-center justify-between">
+                    <h2 class="font-bold text-white flex items-center gap-2 text-sm uppercase tracking-widest">✨ AI Resume Specialist</h2>
+                </div>
+                <div class="p-5 space-y-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Konfigurasi API Key (Aman)</label>
+                        <input type="password" id="manualApiKey" placeholder="Tempel Gemini API Key di sini..." class="w-full p-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <p class="text-[9px] text-slate-400 mt-2 leading-relaxed">
+                            *Key ini hanya disimpan sementara di browser Anda dan tidak akan di-upload ke server mana pun. 
+                            Dapatkan key gratis di <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-indigo-600 font-bold hover:underline underline-offset-2 italic">Google AI Studio &rarr;</a>
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="askAI('summary')" class="flex flex-col items-center gap-2 py-3 px-2 bg-indigo-50 border border-indigo-100 rounded-xl hover:bg-indigo-100 transition">
+                            <span class="text-lg">✍️</span>
+                            <span class="text-[11px] font-bold text-indigo-700 uppercase">Perbaiki Profil</span>
+                        </button>
+                        <button onclick="askAI('experience')" class="flex flex-col items-center gap-2 py-3 px-2 bg-indigo-50 border border-indigo-100 rounded-xl hover:bg-indigo-100 transition">
+                            <span class="text-lg">🚀</span>
+                            <span class="text-[11px] font-bold text-indigo-700 uppercase">Optimasi Kerja</span>
+                        </button>
+                    </div>
+                    <div id="aiStatus" class="hidden text-xs text-indigo-600 italic ai-shimmer p-3 rounded-xl text-center font-medium border border-indigo-100">AI sedang memproses format...</div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                <div>
+                    <h2 class="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Informasi Kontak</h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="text" id="inName" placeholder="Nama Lengkap" class="col-span-2 w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" oninput="updatePreview()">
+                        <input type="text" id="inTitle" placeholder="Posisi Saat Ini" class="col-span-2 w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" oninput="updatePreview()">
+                        <input type="email" id="inEmail" placeholder="Email" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" oninput="updatePreview()">
+                        <input type="text" id="inPhone" placeholder="No. Telepon" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" oninput="updatePreview()">
+                        <input type="text" id="inAddress" placeholder="Lokasi (Kota, Negara)" class="col-span-2 w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" oninput="updatePreview()">
+                    </div>
+                </div>
+                <div>
+                    <h2 class="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Ringkasan Profil</h2>
+                    <textarea id="inAbout" rows="4" placeholder="Deskripsikan nilai profesional Anda..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm" oninput="updatePreview()"></textarea>
+                </div>
+                <div>
+                    <h2 class="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Pengalaman Profesional</h2>
+                    <textarea id="inExp" rows="10" placeholder="Perusahaan - Jabatan (Tahun)&#10;• Pencapaian utama..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm" oninput="updatePreview()"></textarea>
+                </div>
+                <div>
+                    <h2 class="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Pendidikan</h2>
+                    <textarea id="inEdu" rows="4" placeholder="Institusi - Gelar (Tahun)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm" oninput="updatePreview()"></textarea>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="downloadPDF()" class="bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-2xl transition shadow-xl flex flex-col items-center justify-center gap-1 group">
+                    <span class="text-xl group-hover:scale-110 transition-transform">📄</span>
+                    <span class="text-xs">UNDUH PDF</span>
+                </button>
+                <button onclick="downloadDOCX()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl transition shadow-xl flex flex-col items-center justify-center gap-1 group">
+                    <span class="text-xl group-hover:scale-110 transition-transform">📝</span>
+                    <span class="text-xs">UNDUH DOCX</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Panel Preview & Pengantar (Kanan) -->
+        <div id="canvas-container" class="w-full lg:w-7/12 style-classic">
+            <!-- Bagian Pengantar & Privasi -->
+            <div class="bg-white p-6 rounded-2xl border-l-4 border-emerald-500 shadow-sm mb-8 no-print">
+                <div class="flex items-start gap-4">
+                    <div class="bg-emerald-100 p-3 rounded-full text-2xl">🔒</div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-lg">Editor CV Tanpa Jejak</h3>
+                        <p class="text-sm text-slate-600 mt-1 leading-relaxed">
+                            Kami menghargai privasi Anda. Aplikasi ini berjalan sepenuhnya di <b>sisi klien</b>. Artinya, data sensitif Anda tidak pernah menyentuh server kami—semua teks yang Anda masukkan tetap berada di memori browser Anda hingga halaman ditutup. Gunakan fitur AI untuk memoles bahasa tanpa khawatir data disalahgunakan.
+                        </p>
+                        <div class="flex flex-wrap gap-4 mt-4">
+                            <div class="flex items-center gap-2 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-wide">
+                                <span>✅ No Database</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-wide">
+                                <span>✅ Browser Only</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-wide">
+                                <span>✅ PDF & Word Ready</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="cv-content" class="cv-preview">
+                <div class="mb-10">
+                    <h1 id="outName" class="text-4xl font-extrabold tracking-tight uppercase text-slate-900">NAMA LENGKAP</h1>
+                    <p id="outTitle" class="text-xl text-indigo-600 font-bold mt-1 uppercase tracking-wide">PROFESI</p>
+                    <div class="flex flex-wrap gap-x-6 gap-y-1 mt-6 text-[13px] text-slate-500 font-medium">
+                        <span id="outEmail">email@domain.com</span>
+                        <span id="outPhone">000-0000-0000</span>
+                        <span id="outAddress">Lokasi</span>
+                    </div>
+                </div>
+                <div class="space-y-10">
+                    <section>
+                        <h3 id="labelAbout" class="section-title text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-4 border-b border-slate-100 pb-2">Profil Profesional</h3>
+                        <div id="outAbout" class="text-slate-700 leading-relaxed text-[14px] text-justify render-text">Isi ringkasan profil...</div>
+                    </section>
+                    <section>
+                        <h3 id="labelExp" class="section-title text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-4 border-b border-slate-100 pb-2">Pengalaman Kerja</h3>
+                        <div id="outExp" class="text-slate-700 text-[14px] leading-relaxed whitespace-pre-line render-text">Isi pengalaman profesional...</div>
+                    </section>
+                    <section>
+                        <h3 id="labelEdu" class="section-title text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-4 border-b border-slate-100 pb-2">Pendidikan</h3>
+                        <div id="outEdu" class="text-slate-700 text-[14px] leading-relaxed whitespace-pre-line render-text">Isi riwayat pendidikan...</div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const labels = {
+            id: { about: "Profil Profesional", exp: "Pengalaman Kerja", edu: "Pendidikan" },
+            en: { about: "Professional Summary", exp: "Work Experience", edu: "Education" }
+        };
+
+        const samples = {
+            id: [
+                {
+                    name: "Andika Pratama, B.Eng", title: "Senior Software Engineer (Backend)", email: "andika.p@tech-giant.id", phone: "0812-7766-5544", address: "BSD City, Tangerang Selatan",
+                    about: "Backend Engineer dengan 7+ tahun pengalaman dalam membangun sistem terdistribusi berskala besar menggunakan *Go, Java,* dan *Node.js*. Ahli dalam mengoptimalkan arsitektur mikroservis.",
+                    exp: "**Unicorn Fintech Indonesia | Senior Software Engineer (2020 - Sekarang)**\n- Merancang ulang sistem transaksi yang meningkatkan throughput sebesar **[X]%**.\n- Mengurangi latensi API sebesar **45%** dengan strategi caching Redis.\n\n**E-Commerce Star | Backend Developer (2017 - 2020)**\n- Mengembangkan mesin pencari Elasticsearch yang meningkatkan relevansi sebesar **30%**.",
+                    edu: "**S1 Teknik Informatika | Institut Teknologi Bandung (2013 - 2017)**"
+                },
+                {
+                    name: "Siti Aminah, M.Ak", title: "Senior Financial Analyst", email: "siti.aminah@fincorp.id", phone: "0811-2233-4455", address: "Jakarta Selatan",
+                    about: "Analis Keuangan dengan keahlian dalam perencanaan strategis dan pelaporan pajak perusahaan multinasional selama 5+ tahun.",
+                    exp: "**Global Finance Solutions | Senior Analyst (2019 - Sekarang)**\n- Mengelola audit internal yang berhasil menemukan penghematan pajak sebesar **[Rp X Miliar]**.\n- Menyusun laporan konsolidasi keuangan untuk **15 entitas anak** perusahaan.\n\n**Local Bank Tbk | Junior Accountant (2016 - 2019)**\n- Mengotomatisasi rekonsiliasi bank yang memangkas waktu kerja bulanan sebesar **20%**.",
+                    edu: "**S2 Akuntansi | Universitas Indonesia (2017 - 2019)**\n**S1 Akuntansi | Universitas Gadjah Mada (2012 - 2016)**"
+                }
+            ],
+            en: [
+                {
+                    name: "James Anderson, CFA", title: "Investment Portfolio Manager", email: "j.anderson@finance-global.com", phone: "+62 811-555-0101", address: "SCBD, Jakarta",
+                    about: "Analytical Investment Professional with 10+ years of experience managing multi-asset portfolios. Proven track record in identifying high-growth opportunities.",
+                    exp: "**Capital Trust Investment | Senior Portfolio Manager (2018 - Present)**\n- Manage a diversified portfolio of **$250M+ AUM**, consistently outperforming the benchmark index by **[X] basis points**.\n- Developed proprietary risk models that reduced volatility by **20%**.",
+                    edu: "**Master of Finance | Princeton University (2012 - 2014)**"
+                },
+                {
+                    name: "Sarah Jenkins", title: "Creative Art Director", email: "sarah.j@creative-agency.com", phone: "+62 855-999-000", address: "Ubud, Bali",
+                    about: "Award-winning Art Director specializing in digital branding and visual storytelling for luxury lifestyle brands.",
+                    exp: "**Visual Pulse Agency | Creative Lead (2020 - Present)**\n- Led the rebranding project for [Top Client Name], resulting in a **[X]%** increase in brand engagement.\n- Managed a creative team of **[number]** designers and copywriters.\n\n**Urban Studio | Senior Designer (2017 - 2020)**\n- Delivered over **100+ successful campaigns** for international retail brands.",
+                    edu: "**BFA in Graphic Design | Rhode Island School of Design (2013 - 2017)**"
+                }
+            ]
+        };
+
+        let currentSampleIndex = { id: -1, en: -1 };
+
+        function changeStyle(style) {
+            const container = document.getElementById('canvas-container');
+            const btnClassic = document.getElementById('btn-classic');
+            const btnModern = document.getElementById('btn-modern');
+            if (style === 'modern') {
+                container.classList.remove('style-classic'); container.classList.add('style-modern');
+                btnModern.classList.add('bg-indigo-600'); btnClassic.classList.remove('bg-indigo-600');
+            } else {
+                container.classList.remove('style-modern'); container.classList.add('style-classic');
+                btnClassic.classList.add('bg-indigo-600'); btnModern.classList.remove('bg-indigo-600');
+            }
+        }
+
+        function loadSample(lang) {
+            const list = samples[lang];
+            currentSampleIndex[lang] = (currentSampleIndex[lang] + 1) % list.length;
+            const data = list[currentSampleIndex[lang]];
+            document.getElementById('labelAbout').innerText = labels[lang].about;
+            document.getElementById('labelExp').innerText = labels[lang].exp;
+            document.getElementById('labelEdu').innerText = labels[lang].edu;
+            document.getElementById('inName').value = data.name;
+            document.getElementById('inTitle').value = data.title;
+            document.getElementById('inEmail').value = data.email;
+            document.getElementById('inPhone').value = data.phone;
+            document.getElementById('inAddress').value = data.address;
+            document.getElementById('inAbout').value = data.about;
+            document.getElementById('inExp').value = data.exp;
+            document.getElementById('inEdu').value = data.edu;
+            updatePreview();
+        }
+
+        function updatePreview() {
+            const mappings = {
+                'inName': 'outName', 'inTitle': 'outTitle', 'inEmail': 'outEmail', 
+                'inPhone': 'outPhone', 'inAddress': 'outAddress', 'inAbout': 'outAbout',
+                'inExp': 'outExp', 'inEdu': 'outEdu'
+            };
+            for (let id in mappings) {
+                const inputEl = document.getElementById(id);
+                const outputEl = document.getElementById(mappings[id]);
+                if (!inputEl || !outputEl) continue;
+                let val = inputEl.value;
+                if (val.trim() !== "") {
+                    outputEl.classList.remove('italic', 'text-slate-400');
+                    let p = val
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*([^\*]+)\*/g, '<em>$1</em>')
+                        .replace(/^-\s/gm, '• ')
+                        .replace(/\*/g, ''); 
+                    outputEl.innerHTML = p;
+                } else {
+                    if(id === 'inName') outputEl.innerHTML = "NAMA LENGKAP";
+                    else if(id === 'inTitle') outputEl.innerHTML = "PROFESI";
+                }
+            }
+        }
+
+        async function askAI(type) {
+            const key = document.getElementById('manualApiKey').value.trim();
+            if (!key) {
+                alert("Silakan masukkan Gemini API Key terlebih dahulu di panel konfigurasi atas.");
+                return;
+            }
+
+            const status = document.getElementById('aiStatus');
+            const about = document.getElementById('inAbout').value;
+            const exp = document.getElementById('inExp').value;
+            const title = document.getElementById('inTitle').value || "Professional";
+            if ((type === 'summary' && !about) || (type === 'experience' && !exp)) return;
+            status.classList.remove('hidden');
+
+            let prompt = `Role: Senior Executive Resume Writer. 
+            Task: Professionalize the following resume section for a ${title}. 
+            
+            GOLDEN RULES:
+            1. DO NOT invent facts, specific companies, or unverifiable accomplishments.
+            2. If you want to suggest a metric or achievement that is NOT in the source text, you MUST wrap it in square brackets as a placeholder. Example: "Improved efficiency by [X%]" or "Led a team of [number] engineers".
+            3. Use Markdown **bold** for impact words and skills. 
+            4. Keep the same language as input.
+            
+            Text to refine: ${type === 'summary' ? about : exp}`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${key}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const data = await response.json();
+                
+                if (data.error) { throw new Error(data.error.message); }
+
+                const result = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (result) {
+                    if (type === 'summary') document.getElementById('inAbout').value = result.trim();
+                    else document.getElementById('inExp').value = result.trim();
+                    updatePreview();
+                }
+            } catch (e) { 
+                console.error(e);
+                alert("Error AI: " + e.message);
+            }
+            finally { status.classList.add('hidden'); }
+        }
+
+        function downloadPDF() {
+            const element = document.getElementById('cv-content');
+            const name = document.getElementById('inName').value || 'Resume';
+            html2pdf().set({
+                margin: [0, 0, 0, 0],
+                filename: `CV_${name.replace(/\s+/g, '_')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 3, letterRendering: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(element).save();
+        }
+
+        function downloadDOCX() {
+            const docxLib = window.docx;
+            if (!docxLib) return;
+            const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = docxLib;
+            const name = document.getElementById('inName').value || 'Nama Lengkap';
+            const title = document.getElementById('inTitle').value || 'Profesi';
+            const email = document.getElementById('inEmail').value || '';
+            const phone = document.getElementById('inPhone').value || '';
+            const address = document.getElementById('inAddress').value || '';
+            const about = document.getElementById('inAbout').value || '';
+            const exp = document.getElementById('inExp').value || '';
+            const edu = document.getElementById('inEdu').value || '';
+
+            const createFormattedParagraphs = (text) => {
+                if (!text) return [new Paragraph({ children: [] })];
+                return text.split('\n').map(line => {
+                    const children = [];
+                    let lastIdx = 0;
+                    const bRegex = /\*\*(.*?)\*\*/g;
+                    let match;
+                    while ((match = bRegex.exec(line)) !== null) {
+                        if (match.index > lastIdx) children.push(new TextRun({ text: line.substring(lastIdx, match.index), size: 22 }));
+                        children.push(new TextRun({ text: match[1], bold: true, size: 22 }));
+                        lastIdx = bRegex.lastIndex;
+                    }
+                    if (lastIdx < line.length) children.push(new TextRun({ text: line.substring(lastIdx), size: 22 }));
+                    return new Paragraph({ children: children.length > 0 ? children : [new TextRun({ text: line, size: 22 })], spacing: { after: 120 } });
+                });
+            };
+
+            const doc = new Document({
+                sections: [{
+                    children: [
+                        new Paragraph({ children: [new TextRun({ text: name.toUpperCase(), bold: true, size: 36 })], alignment: AlignmentType.LEFT }),
+                        new Paragraph({ children: [new TextRun({ text: title.toUpperCase(), bold: true, size: 24, color: "4f46e5" })], spacing: { after: 200 } }),
+                        new Paragraph({ children: [new TextRun({ text: `${email} | ${phone} | ${address}`, size: 18, color: "64748b" })], spacing: { after: 400 } }),
+                        new Paragraph({ text: "PROFIL PROFESIONAL", heading: HeadingLevel.HEADING_2, spacing: { before: 200, after: 120 } }),
+                        ...createFormattedParagraphs(about),
+                        new Paragraph({ text: "PENGALAMAN KERJA", heading: HeadingLevel.HEADING_2, spacing: { before: 400, after: 120 } }),
+                        ...createFormattedParagraphs(exp),
+                        new Paragraph({ text: "PENDIDIKAN", heading: HeadingLevel.HEADING_2, spacing: { before: 400, after: 120 } }),
+                        ...createFormattedParagraphs(edu),
+                    ],
+                }],
+            });
+            Packer.toBlob(doc).then(blob => { if (window.saveAs) window.saveAs(blob, `CV_${name.replace(/\s+/g, '_')}.docx`); });
+        }
+        window.onload = updatePreview;
+    </script>
+</body>
+</html>
